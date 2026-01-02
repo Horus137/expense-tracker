@@ -8,3 +8,6 @@ data/
 
 # OS
 .DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
