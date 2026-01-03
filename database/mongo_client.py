@@ -1,8 +1,7 @@
+import os
 from pymongo import MongoClient
 
 def get_db():
-    """
-    Creates a connection to MongoDB and returns the database.
-    """
-    client = MongoClient("mongodb://127.0.0.1:27017")
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017")
+    client = MongoClient(mongo_uri)
     return client.expense_tracker
