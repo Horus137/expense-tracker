@@ -1,6 +1,8 @@
 import pandas as pd
 from datetime import datetime
 from database.mongo_client import get_db
+from validation.validate_expense import validate_expense
+from pymongo import UpdateOne
 
 
 CSV_PATH = "data/input/bank_expenses.csv"
@@ -10,28 +12,30 @@ REQUIRED_FIELDS = ["date", "amount", "category", "merchant", "payment_method"]
 
 
 def validate_row(row):
-    if any(pd.isna(row[field]) for field in REQUIRED_FIELDS):
-        return False, "missing_required_field"
+    """
+    CSV-level validation (structure & presence).
+    Business rules are validated in validate_expense().
+    """
 
-    try:
-        amount = float(row["amount"])
-        if amount <= 0:
-            return False, "invalid_amount"
-    except Exception:
-        return False, "amount_not_numeric"
-
-    try:
-        pd.to_datetime(row["date"])
-    except Exception:
-        return False, "invalid_date"
-
-    if not str(row["category"]).strip():
-        return False, "empty_category"
+    # Required fields present
+    for field in REQUIRED_FIELDS:
+        if pd.isna(row.get(field)):
+            return False, "missing_required_field"
 
     if not str(row["merchant"]).strip():
         return False, "empty_merchant"
 
-    return True, None
+    if not str(row["payment_method"]).strip():
+        return False, "empty_payment_method"
+
+    # Delegate core validation
+    expense_dict = {
+        "amount": row["amount"],
+        "category": row["category"],
+        "date": row["date"],
+    }
+
+    return validate_expense(expense_dict)
 
 
 def main():
@@ -51,7 +55,7 @@ def main():
             rejected_rows.append(rejected)
             continue
 
-        expense = {
+        valid_expenses.append({
             "user_id": "user_1",
             "amount": float(row["amount"]),
             "currency": "EUR",
@@ -61,12 +65,31 @@ def main():
             "timestamp": pd.to_datetime(row["date"]),
             "ingestion_ts": datetime.utcnow(),
             "source": "csv",
-        }
-
-        valid_expenses.append(expense)
+        })
 
     if valid_expenses:
-        db.expenses.insert_many(valid_expenses)
+        operations = []
+
+        for expense in valid_expenses:
+            operations.append(
+                UpdateOne(
+                    {
+                        "user_id": expense["user_id"],
+                        "amount": expense["amount"],
+                        "timestamp": expense["timestamp"],
+                        "merchant": expense["merchant"],
+                    },
+                    {"$setOnInsert": expense},
+                    upsert=True,
+                )
+            )
+
+        result = db.expenses.bulk_write(operations, ordered=False)
+
+        print(
+            f"Upserted {result.upserted_count} new rows "
+            f"(matched {result.matched_count})"
+        )
 
     if rejected_rows:
         pd.DataFrame(rejected_rows).to_csv(LOG_PATH, index=False)

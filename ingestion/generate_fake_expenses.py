@@ -1,6 +1,7 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from faker import Faker
+from pymongo import UpdateOne
 
 from database.mongo_client import get_db
 
@@ -12,6 +13,8 @@ PAYMENT_METHODS = ["card", "cash", "mbway"]
 
 
 def generate_expense():
+    timestamp = fake.date_time_between(start_date="-60d", end_date="now")
+
     return {
         "user_id": "user_1",
         "amount": round(random.uniform(2, 150), 2),
@@ -19,10 +22,9 @@ def generate_expense():
         "category": random.choice(CATEGORIES),
         "merchant": random.choice(MERCHANTS),
         "payment_method": random.choice(PAYMENT_METHODS),
-        "timestamp": fake.date_time_between(
-            start_date="-60d", end_date="now"
-        ),
+        "timestamp": timestamp,
         "ingestion_ts": datetime.utcnow(),
+        "source": "faker",
     }
 
 
@@ -31,8 +33,29 @@ def main():
 
     expenses = [generate_expense() for _ in range(100)]
 
-    result = db.expenses.insert_many(expenses)
-    print(f"Inserted {len(result.inserted_ids)} fake expenses")
+    operations = []
+
+    for expense in expenses:
+        operations.append(
+            UpdateOne(
+                {
+                    "user_id": expense["user_id"],
+                    "amount": expense["amount"],
+                    "timestamp": expense["timestamp"],
+                    "merchant": expense["merchant"],
+                },
+                {"$setOnInsert": expense},
+                upsert=True,
+            )
+        )
+
+    if operations:
+        result = db.expenses.bulk_write(operations, ordered=False)
+
+        print(
+            f"Upserted {result.upserted_count} new expenses "
+            f"(matched {result.matched_count})"
+        )
 
 
 if __name__ == "__main__":

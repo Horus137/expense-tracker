@@ -1,9 +1,6 @@
-version: "3.9"
-
 services:
   mongodb:
     image: mongo:7
-    container_name: expense-mongodb
     ports:
       - "27017:27017"
     volumes:
@@ -11,14 +8,19 @@ services:
 
   pipeline:
     build: .
-    container_name: expense-pipeline
     depends_on:
       - mongodb
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017
+    command: bash run_pipeline.sh
+
+  notebook:
+    build: .
+    depends_on:
+      - mongodb
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --allow-root
     ports:
       - "8888:8888"
-    command: bash run_pipeline.sh
+    volumes:
+      - .:/app
 
 volumes:
   mongo_data:
