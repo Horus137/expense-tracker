@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from database.mongo_client import get_db
 from validation.validate_expense import validate_expense
 from pymongo import UpdateOne
@@ -51,7 +51,7 @@ def main():
         if not is_valid:
             rejected = row.to_dict()
             rejected["rejection_reason"] = reason
-            rejected["rejected_at"] = datetime.utcnow()
+            rejected["rejected_at"] = datetime.now(timezone.utc)
             rejected_rows.append(rejected)
             continue
 
@@ -63,7 +63,7 @@ def main():
             "merchant": row["merchant"],
             "payment_method": row["payment_method"],
             "timestamp": pd.to_datetime(row["date"]),
-            "ingestion_ts": datetime.utcnow(),
+            "ingestion_ts": datetime.now(timezone.utc),
             "source": "csv",
         })
 

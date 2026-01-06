@@ -1,5 +1,5 @@
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from faker import Faker
 from pymongo import UpdateOne
 
@@ -23,7 +23,7 @@ def generate_expense():
         "merchant": random.choice(MERCHANTS),
         "payment_method": random.choice(PAYMENT_METHODS),
         "timestamp": timestamp,
-        "ingestion_ts": datetime.utcnow(),
+        "ingestion_ts": datetime.now(timezone.utc),
         "source": "faker",
     }
 

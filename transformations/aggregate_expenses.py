@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from database.mongo_client import get_db
 
 
@@ -20,7 +20,7 @@ def aggregate_by_category():
     results = list(db.expenses.aggregate(pipeline))
 
     # Add metadata
-    run_ts = datetime.utcnow()
+    run_ts = datetime.now(timezone.utc)
     for doc in results:
         doc["aggregation_level"] = "category"
         doc["run_ts"] = run_ts

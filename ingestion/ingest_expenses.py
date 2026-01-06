@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from database.mongo_client import get_db
 
 def main():
@@ -11,8 +11,8 @@ def main():
         "category": "food",
         "merchant": "Continente",
         "payment_method": "card",
-        "timestamp": datetime.utcnow(),
-        "ingestion_ts": datetime.utcnow()
+        "timestamp": datetime.now(timezone.utc),
+        "ingestion_ts": datetime.now(timezone.utc)
     }
 
     result = db.expenses.insert_one(expense)
