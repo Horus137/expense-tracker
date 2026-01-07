@@ -50,6 +50,7 @@ def main():
     db.monthly_summary.insert_many(results)
 
     print(f"Saved {len(results)} records to monthly_summary")
+    print(f"STATS: rows={len(results)}")
 
 
 if __name__ == "__main__":

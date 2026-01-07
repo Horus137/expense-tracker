@@ -96,6 +96,7 @@ def main():
 
     print(f"Inserted {len(valid_expenses)} valid rows")
     print(f"Rejected {len(rejected_rows)} rows (logged to {LOG_PATH})")
+    print(f"STATS: inserted={len(valid_expenses)}, rejected={len(rejected_rows)}")
 
 
 if __name__ == "__main__":

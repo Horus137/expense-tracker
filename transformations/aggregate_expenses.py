@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from pymongo import UpdateOne
 from database.mongo_client import get_db
 
 
@@ -19,7 +20,6 @@ def aggregate_by_category():
 
     results = list(db.expenses.aggregate(pipeline))
 
-    # Add metadata
     run_ts = datetime.now(timezone.utc)
     for doc in results:
         doc["aggregation_level"] = "category"
@@ -39,11 +39,22 @@ def main():
         print("No data to aggregate.")
         return
 
-    # Replace analytics table
-    db.category_summary.delete_many({})
-    db.category_summary.insert_many(results)
+    operations = []
+
+    for doc in results:
+        operations.append(
+            UpdateOne(
+                {"_id": doc["_id"]},   # category name
+                {"$set": doc},
+                upsert=True
+            )
+        )
+
+    if operations:
+        db.category_summary.bulk_write(operations, ordered=False)
 
     print(f"Saved {len(results)} records to category_summary")
+    print(f"STATS: rows={len(results)}")
 
 
 if __name__ == "__main__":

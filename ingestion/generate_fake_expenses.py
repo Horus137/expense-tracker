@@ -24,7 +24,7 @@ def generate_expense():
         "payment_method": random.choice(PAYMENT_METHODS),
         "timestamp": timestamp,
         "ingestion_ts": datetime.now(timezone.utc),
-        "source": "faker",
+        "source": "fake",
     }
 
 
@@ -57,6 +57,7 @@ def main():
             f"(matched {result.matched_count})"
         )
 
+    print(f"STATS: inserted={len(expenses)}")
 
 if __name__ == "__main__":
     main()
